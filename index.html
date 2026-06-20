@@ -1,0 +1,288 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0d0f14">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<title>Snip — Video to Ringtone</title>
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icon-192.png">
+<style>
+  :root{
+    --bg:#0d0f14; --panel:#161a22; --panel-2:#1e232e;
+    --ink:#f2f4f0; --muted:#8b93a3; --line:#2a3140;
+    --acid:#e8f33a; --acid-dim:#b9c12e;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{background:var(--bg);color:var(--ink)}
+  body{
+    font-family:ui-monospace,"SF Mono",Menlo,monospace;
+    min-height:100dvh; padding:env(safe-area-inset-top) 16px 32px;
+    -webkit-font-smoothing:antialiased;
+  }
+  .wrap{max-width:560px;margin:0 auto}
+
+  header{padding:28px 0 18px}
+  .mark{
+    font-weight:600;font-size:13px;letter-spacing:.32em;text-transform:uppercase;
+    color:var(--acid);display:flex;align-items:center;gap:10px;
+  }
+  .mark::before{content:"";width:22px;height:22px;background:var(--acid);
+    clip-path:polygon(0 0,100% 50%,0 100%,18% 50%);display:inline-block}
+  h1{font-size:30px;line-height:1.05;font-weight:600;margin-top:14px;letter-spacing:-.01em}
+  h1 em{font-style:normal;color:var(--muted)}
+  .sub{color:var(--muted);font-size:13px;margin-top:8px;line-height:1.5}
+
+  .install{
+    display:none;margin-top:16px;width:100%;background:none;border:1px solid var(--acid);
+    color:var(--acid);border-radius:11px;padding:12px;font-family:inherit;font-size:13px;
+    letter-spacing:.04em;cursor:pointer;
+  }
+  .install:active{background:rgba(232,243,58,.06)}
+
+  .step{margin-top:22px}
+  .step-no{
+    font-size:11px;letter-spacing:.2em;color:var(--muted);text-transform:uppercase;
+    display:flex;align-items:center;gap:8px;margin-bottom:10px;
+  }
+  .step-no b{color:var(--acid);font-weight:600}
+
+  .drop{
+    border:1.5px dashed var(--line);border-radius:14px;background:var(--panel);
+    padding:30px 18px;text-align:center;cursor:pointer;transition:.18s;display:block;
+  }
+  .drop:hover,.drop.over{border-color:var(--acid-dim);background:var(--panel-2)}
+  .drop strong{color:var(--ink);font-size:15px}
+  .drop span{display:block;color:var(--muted);font-size:12px;margin-top:6px}
+  input[type=file]{display:none}
+
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:14px;padding:16px}
+  video{width:100%;border-radius:10px;background:#000;max-height:240px}
+  .fname{font-size:12px;color:var(--muted);margin-top:10px;word-break:break-all}
+
+  .trim{margin-top:14px}
+  .row{display:flex;gap:12px;align-items:center;margin-top:12px}
+  .row label{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.12em;flex:0 0 64px}
+  .timebox{
+    flex:1;background:var(--panel-2);border:1px solid var(--line);border-radius:9px;
+    padding:10px 12px;color:var(--ink);font-family:inherit;font-size:15px;width:100%;
+  }
+  .timebox:focus{outline:none;border-color:var(--acid-dim)}
+  .dur-tag{font-size:12px;color:var(--acid);min-width:54px;text-align:right}
+
+  .chips{display:flex;gap:8px;margin-top:6px}
+  .chip{
+    flex:1;background:var(--panel-2);border:1px solid var(--line);border-radius:9px;
+    padding:9px 0;text-align:center;font-size:12px;color:var(--muted);cursor:pointer;transition:.15s;
+  }
+  .chip.on{border-color:var(--acid);color:var(--acid);background:rgba(232,243,58,.06)}
+
+  .quick{display:flex;gap:8px;margin-top:10px}
+  .quick button{
+    flex:1;background:none;border:1px solid var(--line);border-radius:9px;color:var(--muted);
+    padding:8px 0;font-family:inherit;font-size:11px;cursor:pointer;letter-spacing:.06em;
+  }
+  .quick button:active{border-color:var(--acid-dim);color:var(--ink)}
+
+  .go{
+    width:100%;margin-top:22px;background:var(--acid);color:#10130a;border:none;
+    border-radius:12px;padding:16px;font-family:inherit;font-size:15px;font-weight:600;
+    letter-spacing:.04em;cursor:pointer;transition:.15s;
+  }
+  .go:disabled{opacity:.4;cursor:not-allowed}
+  .go:not(:disabled):active{transform:translateY(1px)}
+
+  .status{margin-top:16px;min-height:20px;font-size:12px;color:var(--muted);line-height:1.5}
+  .bar{height:4px;background:var(--panel-2);border-radius:99px;margin-top:10px;overflow:hidden;display:none}
+  .bar i{display:block;height:100%;width:0;background:var(--acid);transition:width .2s}
+
+  .result{margin-top:16px;display:none}
+  .result audio{width:100%;margin-bottom:12px}
+  .dl{
+    display:block;text-align:center;text-decoration:none;background:var(--panel-2);
+    border:1px solid var(--acid);color:var(--acid);border-radius:12px;padding:14px;
+    font-weight:600;font-size:14px;letter-spacing:.04em;
+  }
+  .hint{font-size:11px;color:var(--muted);margin-top:14px;line-height:1.6}
+  .hint code{color:var(--acid-dim)}
+  .hidden{display:none}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div class="mark">Snip</div>
+    <h1>Video to ringtone <em>in your browser.</em></h1>
+    <p class="sub">Pick a clip, trim the part you want, export an MP3. Nothing leaves your phone — it all runs locally.</p>
+    <button class="install" id="install">Install Snip to home screen</button>
+  </header>
+
+  <div class="step">
+    <div class="step-no"><b>01</b> Choose a video</div>
+    <label class="drop" id="drop">
+      <strong>Tap to pick a video</strong>
+      <span>MP4, MOV, WEBM, MKV…</span>
+      <input type="file" id="file" accept="video/*">
+    </label>
+  </div>
+
+  <div class="step hidden" id="step2">
+    <div class="step-no"><b>02</b> Preview &amp; trim</div>
+    <div class="card">
+      <video id="vid" controls playsinline></video>
+      <div class="fname" id="fname"></div>
+      <div class="trim">
+        <div class="row">
+          <label>Start</label>
+          <input class="timebox" id="start" inputmode="decimal" value="0">
+          <span class="dur-tag" id="durtag">0.0s</span>
+        </div>
+        <div class="quick">
+          <button data-act="here">Set start = now</button>
+          <button data-act="reset">Reset</button>
+        </div>
+        <div class="row">
+          <label>Length</label>
+          <input class="timebox" id="len" inputmode="decimal" value="20">
+          <span class="dur-tag">sec</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="step" style="margin-top:18px">
+      <div class="step-no"><b>03</b> Quality</div>
+      <div class="chips" id="chips">
+        <div class="chip" data-br="128k">128k</div>
+        <div class="chip on" data-br="192k">192k</div>
+        <div class="chip" data-br="256k">256k</div>
+      </div>
+    </div>
+
+    <button class="go" id="go">Convert to MP3</button>
+    <div class="status" id="status"></div>
+    <div class="bar" id="bar"><i id="barfill"></i></div>
+
+    <div class="result" id="result">
+      <audio id="aud" controls></audio>
+      <a class="dl" id="dl" download="ringtone.mp3">Download MP3</a>
+      <p class="hint">On Samsung: <code>Settings → Sounds and vibration → Ringtone → +</code>, then pick this file.</p>
+    </div>
+  </div>
+
+  <p class="hint">First conversion downloads the audio engine (~25&nbsp;MB) once, then it's cached offline.</p>
+</div>
+
+<script type="module">
+import { FFmpeg } from "https://unpkg.com/@ffmpeg/ffmpeg@0.12.10/dist/esm/index.js";
+import { toBlobURL } from "https://unpkg.com/@ffmpeg/util@0.12.1/dist/esm/index.js";
+
+const $ = id => document.getElementById(id);
+const file=$("file"), drop=$("drop"), step2=$("step2"), vid=$("vid"),
+      fname=$("fname"), startEl=$("start"), lenEl=$("len"), durtag=$("durtag"),
+      chips=$("chips"), go=$("go"), status=$("status"), bar=$("bar"),
+      barfill=$("barfill"), result=$("result"), aud=$("aud"), dl=$("dl"),
+      installBtn=$("install");
+
+let selected=null, bitrate="192k", ffmpeg=null, loaded=false;
+
+function pick(f){
+  if(!f) return;
+  selected=f;
+  vid.src=URL.createObjectURL(f);
+  fname.textContent=f.name;
+  step2.classList.remove("hidden");
+  result.style.display="none";
+  step2.scrollIntoView({behavior:"smooth",block:"start"});
+}
+file.addEventListener("change",e=>pick(e.target.files[0]));
+["dragover","dragenter"].forEach(ev=>drop.addEventListener(ev,e=>{e.preventDefault();drop.classList.add("over")}));
+["dragleave","drop"].forEach(ev=>drop.addEventListener(ev,e=>{e.preventDefault();drop.classList.remove("over")}));
+drop.addEventListener("drop",e=>pick(e.dataTransfer.files[0]));
+
+vid.addEventListener("loadedmetadata",()=>{durtag.textContent=vid.duration.toFixed(1)+"s"});
+
+document.querySelectorAll(".quick button").forEach(b=>{
+  b.onclick=()=>{
+    if(b.dataset.act==="here") startEl.value=vid.currentTime.toFixed(1);
+    else { startEl.value=0; lenEl.value=20; }
+  };
+});
+chips.addEventListener("click",e=>{
+  const c=e.target.closest(".chip"); if(!c) return;
+  chips.querySelectorAll(".chip").forEach(x=>x.classList.remove("on"));
+  c.classList.add("on"); bitrate=c.dataset.br;
+});
+
+async function loadEngine(){
+  if(loaded) return;
+  status.textContent="Loading audio engine…";
+  ffmpeg=new FFmpeg();
+  ffmpeg.on("progress",({progress})=>{
+    if(progress>0&&progress<=1){ barfill.style.width=Math.round(progress*100)+"%"; }
+  });
+  const base="https://unpkg.com/@ffmpeg/core@0.12.6/dist/esm";
+  await ffmpeg.load({
+    coreURL: await toBlobURL(`${base}/ffmpeg-core.js`,"text/javascript"),
+    wasmURL: await toBlobURL(`${base}/ffmpeg-core.wasm`,"application/wasm"),
+  });
+  loaded=true;
+}
+
+go.addEventListener("click",async()=>{
+  if(!selected) return;
+  const start=Math.max(0,parseFloat(startEl.value)||0);
+  const len=Math.max(1,parseFloat(lenEl.value)||20);
+  go.disabled=true; result.style.display="none"; bar.style.display="block"; barfill.style.width="0";
+  try{
+    await loadEngine();
+    status.textContent="Converting…";
+    const inName="in_"+selected.name.replace(/[^\w.]/g,"_");
+    const buf=new Uint8Array(await selected.arrayBuffer());
+    await ffmpeg.writeFile(inName,buf);
+    await ffmpeg.exec([
+      "-ss",String(start),"-t",String(len),"-i",inName,
+      "-vn","-acodec","libmp3lame","-b:a",bitrate,"out.mp3"
+    ]);
+    const data=await ffmpeg.readFile("out.mp3");
+    const blob=new Blob([data.buffer],{type:"audio/mpeg"});
+    const url=URL.createObjectURL(blob);
+    aud.src=url; dl.href=url;
+    const nm=(selected.name.replace(/\.[^.]+$/,"")||"ringtone").slice(0,40);
+    dl.download=nm+".mp3";
+    result.style.display="block";
+    status.textContent="Done — "+(blob.size/1024).toFixed(0)+" KB";
+    result.scrollIntoView({behavior:"smooth",block:"center"});
+    await ffmpeg.deleteFile(inName); await ffmpeg.deleteFile("out.mp3");
+  }catch(err){
+    console.error(err);
+    status.textContent="Conversion failed: "+(err.message||err)+". Try a shorter clip or reload.";
+  }finally{
+    go.disabled=false; bar.style.display="none";
+  }
+});
+
+// ---- install prompt ----
+let deferredPrompt=null;
+window.addEventListener("beforeinstallprompt",e=>{
+  e.preventDefault(); deferredPrompt=e; installBtn.style.display="block";
+});
+installBtn.addEventListener("click",async()=>{
+  if(!deferredPrompt) return;
+  deferredPrompt.prompt();
+  await deferredPrompt.userChoice;
+  deferredPrompt=null; installBtn.style.display="none";
+});
+window.addEventListener("appinstalled",()=>{installBtn.style.display="none"});
+
+// ---- service worker ----
+if("serviceWorker" in navigator){
+  window.addEventListener("load",()=>{
+    navigator.serviceWorker.register("sw.js").catch(e=>console.warn("SW failed",e));
+  });
+}
+</script>
+</body>
+</html>
