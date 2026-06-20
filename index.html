@@ -224,7 +224,12 @@ async function loadEngine(){
     if(progress>0&&progress<=1){ barfill.style.width=Math.round(progress*100)+"%"; }
   });
   const base="https://unpkg.com/@ffmpeg/core@0.12.6/dist/esm";
+  // The @ffmpeg/ffmpeg wrapper spawns a Web Worker from its own package.
+  // Loading that worker straight from the CDN is blocked cross-origin on
+  // github.io, so we fetch it as a blob (same-origin) and pass it explicitly.
+  const wrapperBase="https://unpkg.com/@ffmpeg/ffmpeg@0.12.10/dist/esm";
   await ffmpeg.load({
+    classWorkerURL: await toBlobURL(`${wrapperBase}/worker.js`,"text/javascript"),
     coreURL: await toBlobURL(`${base}/ffmpeg-core.js`,"text/javascript"),
     wasmURL: await toBlobURL(`${base}/ffmpeg-core.wasm`,"application/wasm"),
   });

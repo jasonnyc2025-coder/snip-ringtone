@@ -1,6 +1,6 @@
 // Snip service worker — caches the app shell so it opens offline.
 // The FFmpeg engine (~25MB) is cached separately by the browser on first use.
-const CACHE = "snip-v1";
+const CACHE = "snip-v2";
 const SHELL = [
   "./",
   "./index.html",
